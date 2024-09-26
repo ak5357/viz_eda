@@ -11,7 +11,7 @@ library(ggridges)
 ```
 
 
-Import data.
+## Import data
 
 ```{r}
 weather_df = 
@@ -34,7 +34,7 @@ weather_df =
 weather_df
 ```
 
-Making our first plot :-)
+## Making our first plot :-)
 
 ```{r}
 ggplot(weather_df, aes(x = tmin, y = tmax)) +
@@ -59,12 +59,70 @@ ggp_weather_scatterplot
 ```
 
 
+Check why some rows are missing.
+
+```{r}
+weather_df |> 
+  filter(is.na(tmax))
+
+```
 
 
+## Fancier scatterplots!
+
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax, color = name)) + #can color by some variable
+  geom_point(alpha = .3, size = .8) + #alpha makes transparent
+  geom_smooth(se = FALSE) #gives a smooth curve through the scatterplot points, se = standard error bars
+```
+
+All parameters in the initial `ggplot` applies to all following lines. So when `color = name` is in the `geom_point`, then `geom_smooth` doesn't treat the three colors as different sets, but rather creates one curve for the entire dataset.
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax)) +
+  geom_point(aes(color = name), alpha = .3, size = .8) +
+  geom_smooth(se = FALSE)
+```
+
+## Using faceting
+
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax, color = name)) +
+  geom_point(alpha = 0.3, size = 0.8) +
+  geom_smooth(se = FALSE) +
+  facet_grid(. ~ name) #the '.' means 'everything'
+```
 
 
+## Other tools
 
+Let's make a somewhat more interesting scatterplot.
 
+```{r}
+weather_df |> 
+  ggplot(aes(x = date, y = tmax, color = name, size = prcp)) +
+  geom_point(alpha = 0.3) +
+  geom_smooth(se = FALSE, color = 'black', size = 0.7) +
+  facet_grid(. ~ name)
+
+```
+
+## Learning assessment
+
+```{r}
+weather_df |> 
+  filter(name == "CentralPark_NY") |> 
+  mutate(
+    tmax_fahr = (tmax * 1.8) + 32,
+    tmin_fahr = (tmin * 1.8) + 32
+  ) |> 
+  ggplot(aes(x = tmin_fahr, y = tmax_fahr)) +
+  geom_point(alpha = 0.3, color = 'cornflowerblue') +
+  geom_smooth(method = "lm", se = FALSE, color = 'darkblue')
+
+```
 
 
 
