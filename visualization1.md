@@ -231,3 +231,265 @@ weather_df |>
     ## `geom_smooth()` using formula = 'y ~ x'
 
 ![](visualization1_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+
+## Small things
+
+Can plot just the linear model, if I exclude the `geom_point` line.
+
+``` r
+weather_df |> 
+  filter(name == "CentralPark_NY") |> 
+  mutate(
+    tmax_fahr = (tmax * 1.8) + 32,
+    tmin_fahr = (tmin * 1.8) + 32
+  ) |> 
+  ggplot(aes(x = tmin_fahr, y = tmax_fahr)) +
+  geom_smooth(method = "lm", se = FALSE, color = 'darkblue')
+```
+
+    ## `geom_smooth()` using formula = 'y ~ x'
+
+![](visualization1_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+
+Hex plot, showing data density.
+
+``` r
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax)) +
+  geom_hex()
+```
+
+    ## Warning: Removed 17 rows containing non-finite outside the scale range
+    ## (`stat_binhex()`).
+
+![](visualization1_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+
+## More tips.
+
+This one makes the scatterplot points blue.
+
+``` r
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax)) +
+  geom_point(color = 'blue')
+```
+
+    ## Warning: Removed 17 rows containing missing values or values outside the scale range
+    ## (`geom_point()`).
+
+![](visualization1_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+
+This one doesn’t make the scatterplot points blue. Instead, ggplot is
+trying to create some new variable, “blue”, and color the points by that
+variable. So the points end up being a different color.
+
+``` r
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax, color = 'blue')) +
+  geom_point()
+```
+
+    ## Warning: Removed 17 rows containing missing values or values outside the scale range
+    ## (`geom_point()`).
+
+![](visualization1_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
+
+## Univariate plots
+
+Basic histogram.
+
+``` r
+weather_df |> 
+  ggplot(aes(x = tmin)) +
+  geom_histogram()
+```
+
+    ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+
+    ## Warning: Removed 17 rows containing non-finite outside the scale range
+    ## (`stat_bin()`).
+
+![](visualization1_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
+
+Where bars of each variable type, are stacked.
+
+``` r
+weather_df |> 
+  ggplot(aes(x = tmin, fill = name)) +
+  geom_histogram(color = 'black')
+```
+
+    ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+
+    ## Warning: Removed 17 rows containing non-finite outside the scale range
+    ## (`stat_bin()`).
+
+![](visualization1_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
+
+Where bars of each variable type, are next to each other.
+
+``` r
+weather_df |> 
+  ggplot(aes(x = tmin, fill = name)) +
+  geom_histogram(position = "dodge")
+```
+
+    ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+
+    ## Warning: Removed 17 rows containing non-finite outside the scale range
+    ## (`stat_bin()`).
+
+![](visualization1_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
+
+Facet grids.
+
+``` r
+weather_df |> 
+  ggplot(aes(x = tmin, fill = name)) +
+  geom_histogram(color = 'black') +
+  facet_grid(. ~ name)
+```
+
+    ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+
+    ## Warning: Removed 17 rows containing non-finite outside the scale range
+    ## (`stat_bin()`).
+
+![](visualization1_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
+
+Density plot
+
+``` r
+weather_df |> 
+  ggplot(aes(x = tmin, fill = name)) +
+  geom_density(alpha = 0.3)
+```
+
+    ## Warning: Removed 17 rows containing non-finite outside the scale range
+    ## (`stat_density()`).
+
+![](visualization1_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
+
+Boxplot
+
+``` r
+weather_df |> 
+  ggplot(aes(x = name, y = tmin, fill = name)) +
+  geom_boxplot()
+```
+
+    ## Warning: Removed 17 rows containing non-finite outside the scale range
+    ## (`stat_boxplot()`).
+
+![](visualization1_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->
+
+Violin plot
+
+``` r
+weather_df |> 
+  ggplot(aes(x = name, y = tmin, fill = name)) +
+  geom_violin()
+```
+
+    ## Warning: Removed 17 rows containing non-finite outside the scale range
+    ## (`stat_ydensity()`).
+
+![](visualization1_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
+
+Combined boxplot and violin plot
+
+``` r
+weather_df |> 
+  ggplot(aes(x = name, y = tmin, fill = name)) +
+  geom_boxplot() +
+  geom_violin(alpha = 0.3)
+```
+
+    ## Warning: Removed 17 rows containing non-finite outside the scale range
+    ## (`stat_boxplot()`).
+
+    ## Warning: Removed 17 rows containing non-finite outside the scale range
+    ## (`stat_ydensity()`).
+
+![](visualization1_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
+
+Ridge plot (Must do `library(ggridges)` first, as this is not included
+with base ggplot library)
+
+``` r
+weather_df |> 
+  ggplot(aes(x = tmin, y = name)) +
+  geom_density_ridges()
+```
+
+    ## Picking joint bandwidth of 1.41
+
+    ## Warning: Removed 17 rows containing non-finite outside the scale range
+    ## (`stat_density_ridges()`).
+
+![](visualization1_files/figure-gfm/unnamed-chunk-23-1.png)<!-- -->
+
+## Saving and embedding plots
+
+Saving plots. \* Make sure to define the plot as a variable, to avoid
+cconfusing with saving. The `ggsave()` function just saves whichever
+plot was most recently created.
+
+``` r
+ggp_weather = weather_df |> 
+  ggplot(aes(x = tmin, y = tmax, color = name)) +
+  geom_point(alpha = 0.3, size = 0.8) +
+  geom_smooth(se = FALSE) +
+  facet_grid(. ~ name) #the '.' means 'everything'
+
+ggp_weather
+```
+
+    ## `geom_smooth()` using method = 'loess' and formula = 'y ~ x'
+
+    ## Warning: Removed 17 rows containing non-finite outside the scale range
+    ## (`stat_smooth()`).
+
+    ## Warning: Removed 17 rows containing missing values or values outside the scale range
+    ## (`geom_point()`).
+
+![](visualization1_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->
+
+``` r
+ggsave("plots/ggp_weather.pdf", ggp_weather, width = 8, height = 6)
+```
+
+    ## `geom_smooth()` using method = 'loess' and formula = 'y ~ x'
+
+    ## Warning: Removed 17 rows containing non-finite outside the scale range
+    ## (`stat_smooth()`).
+    ## Removed 17 rows containing missing values or values outside the scale range
+    ## (`geom_point()`).
+
+Embedding plots.
+
+``` r
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax, color = name)) +
+  geom_point(alpha = 0.3, size = 0.8) +
+  geom_smooth(se = FALSE) +
+  facet_grid(. ~ name) #the '.' means 'everything'
+```
+
+    ## `geom_smooth()` using method = 'loess' and formula = 'y ~ x'
+
+    ## Warning: Removed 17 rows containing non-finite outside the scale range
+    ## (`stat_smooth()`).
+
+    ## Warning: Removed 17 rows containing missing values or values outside the scale range
+    ## (`geom_point()`).
+
+![](visualization1_files/figure-gfm/unnamed-chunk-25-1.png)<!-- -->
+
+``` r
+knitr::opts_chunk$set(
+  fig.width = 6,
+  fig.asp = .6,
+  out.width = "90%"
+)
+```

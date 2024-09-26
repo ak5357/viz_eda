@@ -8,6 +8,7 @@ output: github_document
 ```{r setup, include=FALSE}
 library(tidyverse)
 library(ggridges)
+library(ggridges)
 ```
 
 
@@ -64,7 +65,6 @@ Check why some rows are missing.
 ```{r}
 weather_df |> 
   filter(is.na(tmax))
-
 ```
 
 
@@ -125,5 +125,150 @@ weather_df |>
 ```
 
 
+## Small things
+
+Can plot just the linear model, if I exclude the `geom_point` line.
+
+```{r}
+weather_df |> 
+  filter(name == "CentralPark_NY") |> 
+  mutate(
+    tmax_fahr = (tmax * 1.8) + 32,
+    tmin_fahr = (tmin * 1.8) + 32
+  ) |> 
+  ggplot(aes(x = tmin_fahr, y = tmax_fahr)) +
+  geom_smooth(method = "lm", se = FALSE, color = 'darkblue')
+```
+
+Hex plot, showing data density.
+
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax)) +
+  geom_hex()
+```
+
+
+## More tips.
+
+This one makes the scatterplot points blue.
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax)) +
+  geom_point(color = 'blue')
+```
+
+This one doesn't make the scatterplot points blue. Instead, ggplot is trying to create some new variable, "blue", and color the points by that variable. So the points end up being a different color.
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax, color = 'blue')) +
+  geom_point()
+```
+
+## Univariate plots
+
+Basic histogram.
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin)) +
+  geom_histogram()
+```
+
+
+Where bars of each variable type, are stacked.
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin, fill = name)) +
+  geom_histogram(color = 'black')
+```
+
+Where bars of each variable type, are next to each other.
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin, fill = name)) +
+  geom_histogram(position = "dodge")
+```
+
+Facet grids.
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin, fill = name)) +
+  geom_histogram(color = 'black') +
+  facet_grid(. ~ name)
+```
+
+Density plot
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin, fill = name)) +
+  geom_density(alpha = 0.3)
+```
+
+
+Boxplot
+```{r}
+weather_df |> 
+  ggplot(aes(x = name, y = tmin, fill = name)) +
+  geom_boxplot()
+```
+
+
+Violin plot
+```{r}
+weather_df |> 
+  ggplot(aes(x = name, y = tmin, fill = name)) +
+  geom_violin()
+```
+
+
+Combined boxplot and violin plot
+```{r}
+weather_df |> 
+  ggplot(aes(x = name, y = tmin, fill = name)) +
+  geom_boxplot() +
+  geom_violin(alpha = 0.3)
+```
+
+Ridge plot
+(Must do `library(ggridges)` first, as this is not included with base ggplot library)
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin, y = name)) +
+  geom_density_ridges()
+```
+
+
+## Saving and embedding plots
+
+Saving plots.
+* Make sure to define the plot as a variable, to avoid cconfusing with saving. The `ggsave()` function just saves whichever plot was most recently created.
+```{r}
+ggp_weather = weather_df |> 
+  ggplot(aes(x = tmin, y = tmax, color = name)) +
+  geom_point(alpha = 0.3, size = 0.8) +
+  geom_smooth(se = FALSE) +
+  facet_grid(. ~ name) #the '.' means 'everything'
+
+ggp_weather
+
+ggsave("plots/ggp_weather.pdf", ggp_weather, width = 8, height = 6)
+```
+
+
+Embedding plots.
+```{r, fig.width=6, fig.height=8}
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax, color = name)) +
+  geom_point(alpha = 0.3, size = 0.8) +
+  geom_smooth(se = FALSE) +
+  facet_grid(. ~ name) #the '.' means 'everything'
+
+knitr::opts_chunk$set(
+  fig.width = 6,
+  fig.asp = .6,
+  out.width = "90%"
+)
+
+```
 
 
