@@ -5,10 +5,36 @@ date: "2024-10-01"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
+Setup
+```{r setup, message=FALSE}
 library(tidyverse)
 library(patchwork)
 ```
+
+
+Setting Options
+```{r setting_options, eval = FALSE}
+library(tidyverse)
+
+knitr::opts_chunk$set(
+  fig.width = 6,
+  fig.asp = .6,
+  out.width = "90%"
+)
+
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
+
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
+```
+
+
+
 
 ## Data Import
 
@@ -111,6 +137,239 @@ weather_df |>
 
 
 ## Themes
+```{r new_plot}
+ggp_scatterplot =
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax)) + 
+  geom_point(aes(color = name), alpha = .5) + 
+  labs(
+    title = "Temperature plot",
+    x = "Minimum daily temperature (C)",
+    y = "Maxiumum daily temperature (C)",
+    color = "Location",
+    caption = "Weather data taken from the rnoaa package for three stations.") +
+ viridis::scale_color_viridis(discrete = TRUE)
+```
+
+
+```{r theme_options}
+# legend at bottom
+ggp_scatterplot +
+  theme(legend.position = "bottom")
+
+# BW theme
+ggp_scatterplot +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+# Minimal theme
+ggp_scatterplot +
+  theme(legend.position = "bottom") +
+  theme_minimal()
+
+# Classic theme
+ggp_scatterplot +
+  theme(legend.position = "bottom") +
+  theme_classic()
+
+# Excel theme
+ggp_scatterplot +
+  theme(legend.position = "bottom") +
+  ggthemes::theme_excel()
+
+```
+
+## Learning Assessment 1
+```{r la_1}
+ggp_date =
+  weather_df |>
+  ggplot(aes(x = date, y = tmax, color = name, size = prcp)) +
+  geom_point(aes(color = name), alpha = .5) +
+  geom_smooth(se = FALSE) +
+  labs(
+    title = "Temperature Plot",
+    x = "Date",
+    y = "Maximum daily temperature (C)",
+    color = "Location",
+    size = "Precipitation",
+    caption = "Weather data taken from the rnoaa package for three stations."
+  ) +
+  viridis::scale_color_viridis(discrete = TRUE) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+ggp_date
+```
+
+
+## Bonus Features
+```{r bonus_features}
+central_park_df = 
+  weather_df |> 
+  filter(name == "CentralPark_NY")
+
+molokai_df = 
+  weather_df |> 
+  filter(name == "Molokai_HI")
+
+molokai_df |> 
+  ggplot(aes(x = date, y = tmax, color = name)) +
+  geom_point() +
+  geom_line(data = central_park_df) +
+  labs(
+    title = "Test Plot",
+    color = "Location"
+  )
+```
+
+## Multiple panels
+```{r density_plots}
+# Density plot
+weather_df |> 
+  ggplot(aes(x = tmax, fill = name)) +
+  geom_density()
+
+# Density plot, separated by name
+weather_df |> 
+  ggplot(aes(x = tmax, fill = name)) +
+  geom_density() +
+  facet_grid(. ~ name)
+```
+
+```{r}
+# Create two plots
+ggp_tmax_tmin =
+  weather_df |> 
+  ggplot(aes(x = tmin, y = tmax, color = name)) +
+  geom_point(alpha = .3)
+
+ggp_tmax_density = 
+  weather_df |> 
+  ggplot(aes(x = tmax, fill = name)) +
+  geom_density(alpha = .3)
+
+# Put both in the same figure, but separate plots
+ggp_tmax_tmin + ggp_tmax_density
+
+
+# Let's add in another plot
+ggp_tmax_date = 
+  weather_df |> 
+  ggplot(aes(x = tmin, y = tmax, color = name)) +
+  geom_point(alpha = .3) +
+  geom_smooth(se = FALSE)
+
+# Put all three plots in the same figure, but separate plots
+(ggp_tmax_tmin + ggp_tmax_density) / ggp_tmax_date
+```
+
+
+
+## Data manipulation
+
+```{r}
+weather_df |> 
+  mutate(name = forcats::fct_relevel(name, c("Molokai_HI", "CentralPark_NY", "Waterhole_WA"))) |> 
+  ggplot(aes(x = name, y = tmax, fill = name)) +
+  geom_violin()
+
+weather_df |>
+  mutate(name = forcats::fct_reorder(name, tmax)) |> 
+  ggplot(aes(x = name, y = tmax)) + 
+  geom_violin(aes(fill = name), color = "blue", alpha = .5) + 
+  theme(legend.position = "bottom")
+
+weather_df |>
+  select(name, tmax, tmin) |> 
+  pivot_longer(
+    tmax:tmin,
+    names_to = "observation", 
+    values_to = "temp") |> 
+  ggplot(aes(x = temp, fill = observation)) +
+  geom_density(alpha = .5) + 
+  facet_grid(~name) + 
+  viridis::scale_fill_viridis(discrete = TRUE)
+```
+
+
+
+
+## Pulse data
+```{r eval = FALSE}
+
+# the data reading in doesn't work due to filepath issue
+pulse_data = 
+  haven::read_sas("data/public_pulse_data.sas7bdat") |>
+  janitor::clean_names() |>
+  pivot_longer(
+    bdi_score_bl:bdi_score_12m,
+    names_to = "visit", 
+    names_prefix = "bdi_score_",
+    values_to = "bdi") |>
+  select(id, visit, everything()) |>
+  mutate(
+    visit = recode(visit, "bl" = "00m"), #OR visit = ifelse(visit == "bl", "00m", visit)
+    visit = factor(visit, levels = str_c(c("00", "01", "06", "12"), "m"))) |>
+  arrange(id, visit)
+
+ggplot(pulse_data, aes(x = visit, y = bdi)) + 
+  geom_boxplot()
+```
+
+
+
+
+
+
+
+```{r}
+# read in pup data
+pup_data = 
+  read_csv("data/FAS_pups.csv", na = c("NA", ".", "")) |>
+  janitor::clean_names() |>
+  mutate(
+    sex = 
+      case_match(
+        sex, 
+        1 ~ "male", 
+        2 ~ "female"))
+
+# read in litter data
+litter_data = 
+  read_csv("./data/FAS_litters.csv", na = c("NA", ".", "")) |>
+  janitor::clean_names() |>
+  separate(group, into = c("dose", "day_of_tx"), sep = 3)
+
+# join both together
+fas_data = left_join(pup_data, litter_data, by = "litter_number") 
+
+# create violin plot grid
+fas_data |>  
+  select(sex, dose, day_of_tx, pd_ears:pd_walk) |> 
+  pivot_longer(
+    pd_ears:pd_walk,
+    names_to = "outcome", 
+    values_to = "pn_day") |> 
+  drop_na() |> 
+  mutate(outcome = forcats::fct_reorder(outcome, pn_day, median)) |> 
+  ggplot(aes(x = dose, y = pn_day)) + 
+  geom_violin() + 
+  facet_grid(day_of_tx ~ outcome)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
