@@ -357,29 +357,3 @@ fas_data |>
   facet_grid(day_of_tx ~ outcome)
 
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
