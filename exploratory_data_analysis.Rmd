@@ -8,6 +8,7 @@ output: html_document
 ```{r setup, include=FALSE}
 library(tidyverse)
 library(dplyr)
+library(haven)
 ```
 
 
@@ -38,12 +39,13 @@ weather_df |>
   geom_histogram()
 ```
 
-
+**Filter by precipitation.**
 ```{r weather_low_prcp}
 weather_df |> 
   filter(prcp >= 1000)
 ```
 
+**Plot weather scatterplot.**
 ```{r weather_plot_1}
 weather_df |> 
   filter(tmax >= 20, tmax <= 30) |> 
@@ -84,7 +86,8 @@ weather_df |>
   count(month, name = "n_obs")
 ```
 
-## 2x 2
+
+## 2x2
 ```{r weather_2x2}
 weather_df |> 
   drop_na(tmax) |> 
@@ -98,7 +101,7 @@ weather_df |>
   summarize(count = n())
 ```
 
-
+**Janitor Tabyl.**
 ```{r janitor_tabyl}
 weather_df |> 
   drop_na(tmax) |> 
@@ -111,12 +114,167 @@ weather_df |>
   janitor::tabyl(name, cold)
 ```
 
+**Other useful summaries.**
+```{r weather_summary_1}
+weather_df |> 
+  group_by(name) |> #can group by name, month, or both
+  summarize(
+    mean_tmax = mean(tmax, na.rm = TRUE),
+    median_tmin = median(tmin, na.rm = TRUE),
+    sd_prcp = sd(prcp, na.rm = TRUE)
+  )
+```
+
+**Summarize then plot.**
+```{r weather_summary_plot_1}
+weather_df |> 
+  group_by(name, month) |> #can group by name, month, or both
+  summarize(
+    mean_tmax = mean(tmax, na.rm = TRUE),
+    median_tmin = median(tmin, na.rm = TRUE),
+    sd_prcp = sd(prcp, na.rm = TRUE)
+  ) |> 
+  ggplot(aes(x = month, y = mean_tmax, color = name)) +
+  geom_point() +
+  geom_line()
+```
+
+**Format for readers, helpful despite "untidy"-ness.**
+```{r weather_summary_kable}
+weather_df |> 
+  group_by(name, month) |> #can group by name, month, or both
+  summarize(
+    mean_tmax = mean(tmax, na.rm = TRUE)
+  ) |> 
+  pivot_wider(
+    names_from = name,
+    values_from = mean_tmax
+  ) |> 
+  knitr::kable(
+    digits = 1,
+    col.names = c("Month", "Central Park", "Molokai", "Waterhole")
+    )
+```
+
+**Group, mutate, and plot.**
+```{r weather_summary_plot_2}
+weather_df |> 
+  group_by(name) |> 
+  mutate(
+    mean_tmax = mean(tmax, na.rm = TRUE),
+    centered_tmax = tmax - mean_tmax
+  ) |> 
+  ggplot(aes(x = date, y = centered_tmax, color = name)) + 
+    geom_point(alpha = 0.5)
+```
 
 
+## Window Functions
 
+**Find hottest / coldest days.**
+```{r hot_cold_days}
+# 10 coldest days in the whole dataset
+weather_df |> 
+  mutate(
+    temp_rank = min_rank(tmax) #ranks all temperatures
+  ) |> 
+  filter(temp_rank < 10) #filter for 10 coldest days
 
+# 3 coldest days for each location
+weather_df |> 
+  group_by(name) |> 
+  mutate(
+    temp_rank = min_rank(desc(tmax)) #ranks all temperatures
+  ) |> 
+  filter(temp_rank < 4) #filter for 3 coldest days per location
 
+# Filter by rank without creating new column
+weather_df |> 
+  group_by(name) |> 
+  filter(min_rank(tmax) < 4) |> 
+  arrange(tmax) #keeps in mind the grouping structure, I think??
+```
 
+## Lag functions
+**Make sure data is ordered and no dates are missing beforehand, or the function won't work as expected.**
+```{r weather_lags}
+# Lagged temps and change in temp from one day to next
+weather_df |>
+  group_by(name) |>
+  mutate(
+    lagged_temp = lag(tmax), #one day behind, or the row above
+    temp_change = tmax - lag(tmax)
+  ) |> 
+  filter(min_rank(temp_change) < 3)
 
+# Use summarize on the lag and lag-based columns
+weather_df |>
+  group_by(name) |>
+  mutate(
+    lagged_temp = lag(tmax), #one day behind, or the row above
+    temp_change = tmax - lag(tmax)
+  ) |> 
+  summarize(
+    temp_change_sd = sd(temp_change, na.rm = TRUE),
+    temp_change_max = max(temp_change, na.rm = TRUE)
+  )
+```
 
+## Learning assessments
 
+**Learning Assessment:** In the PULSE data, the primary outcome is BDI score; it’s observed over follow-up visits, and we might ask if the typical BDI score values are roughly similar at each. Try to write a code chunk that imports, cleans, and summarizes the PULSE data to examine the mean and median at each visit. Export the results of this in a reader-friendly format.
+```{r learning_assessment_1}
+pulse_df = read_sas("data/public_pulse_data.sas7bdat") |> 
+  janitor::clean_names() |> 
+  pivot_longer(
+    starts_with("bdi_score"),
+    names_to = "visit",
+    names_prefix = "bdi_score_",
+    values_to = "bdi"
+  ) |> 
+  relocate(id, visit) |> 
+  mutate(
+    visit = replace(visit, visit == "bl", "00m"),
+    visit = factor(visit, levels = str_c(c("00", "01", "06", "12"), "m"))
+  ) |> 
+  arrange(id, visit)
+
+pulse_df |> 
+  group_by(visit) |> 
+  summarize(
+    mean_bdi = mean(bdi, na.rm = TRUE),
+    median_bdi = median(bdi, na.rm = TRUE)
+  ) |> 
+  knitr::kable(digits = 3)
+```
+
+**Learning Assessment:** In the FAS data, there are several outcomes of interest; for now, focus on post-natal day on which a pup is able to pivot. Two predictors of interest are the dose level and the day of treatment. Produce a reader-friendly table that quantifies the possible associations between dose, day of treatment, and the ability to pivot.
+```{r learning_assessment_2}
+# Import litter data
+litter_df = 
+  read_csv("./data/FAS_litters.csv", na = c("NA", " ", "", ".")) |>
+  janitor::clean_names() |>
+  separate(group, into = c("dose", "tx_day"), sep = 3)
+
+# Import pup data
+pup_df = 
+  read_csv("./data/FAS_pups.csv", na = c("NA", " ", "", ".")) |>
+  janitor::clean_names() |>
+  mutate(sex = recode(sex, `1` = "male", `2` = "female")) 
+
+# Join litter and pup data
+fas_df = left_join(pup_data, litter_data, by = "litter_number") 
+
+# Summary table
+fas_df |> 
+  drop_na(dose) |> 
+  group_by(dose, tx_day) |> 
+  summarize(
+    mean_pivot = mean(pd_pivot, na.rm = TRUE)
+  ) |> 
+  pivot_wider(
+    names_from = dose,
+    values_from = mean_pivot
+  ) |> 
+  knitr::kable()
+```
