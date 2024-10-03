@@ -317,11 +317,6 @@ ggplot(pulse_data, aes(x = visit, y = bdi)) +
 ```
 
 
-
-
-
-
-
 ```{r}
 # read in pup data
 pup_data = 
